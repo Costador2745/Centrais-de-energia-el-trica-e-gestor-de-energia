@@ -74,7 +74,7 @@ int main()
             else if (n == 0)
             {
                 close(fd_energia);
-                fd_energia = open(pipe_energia, O_RDONLY | O_NONBLOCK);;
+                fd_energia = open(pipe_energia, O_RDONLY | O_NONBLOCK);
             }
         }
         if (FD_ISSET(fd_alertas, &read_fds))
@@ -88,7 +88,7 @@ int main()
             else if (i == 0)
             {
                 close(fd_alertas);
-                fd_alertas = open(pipe_alertas, O_RDONLY | O_NONBLOCK);;
+                fd_alertas = open(pipe_alertas, O_RDONLY | O_NONBLOCK);
             }
         }
     }
