@@ -54,7 +54,8 @@ int main()
 
         int max_fd = (fd_energia > fd_alertas) ? fd_energia : fd_alertas;
 
-        if (int activity = select(max_fd + 1, &read_fds, NULL, NULL, NULL) < 0)
+        int activity = select(max_fd + 1, &read_fds, NULL, NULL, NULL);
+        if (activity < 0)
         {
             perror("Erro na função select.\n");
             return -1;
@@ -70,6 +71,11 @@ int main()
                 potencia_instananea = valor;
                 printf("[DADOS] Energia Total Produzida: %d MWh |[DADOS] Potência Instantânea Produzida: %d kW\n", energia_total, potencia_instananea);
             }
+            else if (n == 0)
+            {
+                close(fd_energia);
+                fd_energia = open(pipe_energia, O_RDONLY | O_NONBLOCK);;
+            }
         }
         if (FD_ISSET(fd_alertas, &read_fds))
         {
@@ -78,6 +84,11 @@ int main()
             {
                 buffer[i] = '\0';
                 printf("%s\n", buffer);
+            }
+            else if (i == 0)
+            {
+                close(fd_alertas);
+                fd_alertas = open(pipe_alertas, O_RDONLY | O_NONBLOCK);;
             }
         }
     }
