@@ -94,5 +94,7 @@ int main()
     }
     close(fd_energia);
     close(fd_alertas);
+    unlink("/tmp/pipe_energia");
+    unlink("/tmp/pipe_alertas");
     return 0;
 }
