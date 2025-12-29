@@ -2,17 +2,31 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
 #define tamanho 256
+#define PIPE_ENERGIA "/tmp/pipe_energia"
+#define PIPE_ALERTAS "/tmp/pipe_alertas"
+
+int fd_energia, fd_alertas;
+
+void terminar(int sig)
+{
+    close(fd_energia);
+    close(fd_alertas);
+    unlink("/tmp/pipe_energia");
+    unlink("/tmp/pipe_alertas");
+    printf("\nCTRL+C recebido com suceso. Terminar...\n");
+}
+
 int main()
 {
-    const char *pipe_energia = "/tmp/pipe_energia";
-    const char *pipe_alertas = "/tmp/pipe_alertas";
+    signal(SIGINT, terminar);
 
-    if (mkfifo(pipe_energia, 0666) == -1)
+    if (mkfifo(PIPE_ENERGIA, 0666) == -1)
     {
         if (errno != EEXIST)
         {
@@ -20,7 +34,7 @@ int main()
             return -1;
         }
     }
-    if (mkfifo(pipe_alertas, 0666) == -1)
+    if (mkfifo(PIPE_ALERTAS, 0666) == -1)
     {
         if (errno != EEXIST)
         {
@@ -29,13 +43,13 @@ int main()
         }
     }
 
-    int fd_energia = open(pipe_energia, O_RDONLY | O_NONBLOCK);
+    fd_energia = open(PIPE_ENERGIA, O_RDONLY | O_NONBLOCK);
     if(fd_energia == -1)
     {
         perror("Não foi possivel abrir a pipe energia.\n");
         return -1;
     }
-    int fd_alertas = open(pipe_alertas, O_RDONLY | O_NONBLOCK);
+    fd_alertas = open(PIPE_ALERTAS, O_RDONLY | O_NONBLOCK);
     if (fd_alertas == -1)
     {
         perror("Não foi possivel abrir a pipe alertas.\n");
@@ -74,7 +88,13 @@ int main()
             else if (n == 0)
             {
                 close(fd_energia);
-                fd_energia = open(pipe_energia, O_RDONLY | O_NONBLOCK);
+
+                fd_energia = open(PIPE_ENERGIA, O_RDONLY | O_NONBLOCK);
+                if(fd_energia == -1)
+                {
+                    perror("Não foi possivel abrir a pipe energia.\n");
+                    return -1;
+                }
             }
         }
         if (FD_ISSET(fd_alertas, &read_fds))
@@ -83,18 +103,19 @@ int main()
             if (i > 0)
             {
                 buffer[i] = '\0';
-                printf("%s\n", buffer);
+                printf("[ALERTA] %s\n", buffer);
             }
             else if (i == 0)
             {
                 close(fd_alertas);
-                fd_alertas = open(pipe_alertas, O_RDONLY | O_NONBLOCK);
+                fd_alertas = open(PIPE_ALERTAS, O_RDONLY | O_NONBLOCK);
+                if (fd_alertas == -1)
+                {
+                    perror("Não foi possivel abrir a pipe alertas.\n");
+                    return -1;
+                }
             }
         }
     }
-    close(fd_energia);
-    close(fd_alertas);
-    unlink("/tmp/pipe_energia");
-    unlink("/tmp/pipe_alertas");
     return 0;
 }
