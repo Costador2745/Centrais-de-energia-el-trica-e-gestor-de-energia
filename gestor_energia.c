@@ -19,7 +19,8 @@ void terminar(int sig)
     close(fd_alertas);
     unlink("/tmp/pipe_energia");
     unlink("/tmp/pipe_alertas");
-    printf("\nCTRL+C recebido com suceso. Terminar...\n");
+    write(1, "CTRL+C recebido. Terminar...\n", 29);
+    _exit(0);
 }
 
 int main()
@@ -69,6 +70,11 @@ int main()
         int max_fd = (fd_energia > fd_alertas) ? fd_energia : fd_alertas;
 
         int activity = select(max_fd + 1, &read_fds, NULL, NULL, NULL);
+        while (activity < 0 && errno == EINTR)
+        {
+            activity = select(max_fd + 1, &read_fds, NULL, NULL, NULL);
+        }
+
         if (activity < 0)
         {
             perror("Erro na função select.\n");
